@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Interactive, real-time Amplitude Modulation logic visualizer.">
+    <title>Modular Amplitude Modulation Tool</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="glass-container">
+        <header>
+            <h1>Amplitude Modulation Studio</h1>
+            <p class="subtitle">$$ y(t) = [1 + m \cdot M(t)] \cdot A \cos(2\pi f_c t) $$</p>
+        </header>
+
+        <main class="grid-layout">
+            <section class="controls-section">
+                <h2>Parameters</h2>
+                
+                <div class="control-group">
+                    <label for="carrier-freq">Carrier Freq ($f_c$): <span id="val-carrier-freq">440</span> Hz</label>
+                    <input type="range" id="carrier-freq" min="100" max="2000" step="1" value="440">
+                </div>
+
+                <div class="control-group">
+                    <label for="modulator-freq">Modulator Freq ($f_m$): <span id="val-modulator-freq">5</span> Hz</label>
+                    <input type="range" id="modulator-freq" min="0.1" max="50" step="0.1" value="5">
+                </div>
+
+                <div class="control-group">
+                    <label for="mod-index">Modulation Index ($m$): <span id="val-mod-index">1.00</span></label>
+                    <input type="range" id="mod-index" min="0" max="2" step="0.01" value="1">
+                </div>
+
+                <div class="control-group">
+                    <label for="dry-wet">Dry / Wet Mix: <span id="val-dry-wet">100</span>%</label>
+                    <input type="range" id="dry-wet" min="0" max="1" step="0.01" value="1">
+                </div>
+
+                <div class="control-group mode-container">
+                    <label>Modulation Mode</label>
+                    <div class="mode-grid">
+                        <input type="radio" name="mod-mode" id="mode-dsb-fc" value="dsb-fc" checked>
+                        <label for="mode-dsb-fc">DSB-FC</label>
+
+                        <input type="radio" name="mod-mode" id="mode-dsb-sc" value="dsb-sc">
+                        <label for="mode-dsb-sc">DSB-SC</label>
+
+                        <input type="radio" name="mod-mode" id="mode-ssb" value="ssb">
+                        <label for="mode-ssb">SSB-SC</label>
+
+                        <input type="radio" name="mod-mode" id="mode-vsb" value="vsb">
+                        <label for="mode-vsb">VSB</label>
+                    </div>
+                </div>
+
+                <div class="control-group mode-container">
+                    <label>Domain Representation</label>
+                    <div class="mode-grid representation-grid">
+                        <input type="radio" name="view-mode" id="view-all" value="all" checked>
+                        <label for="view-all">All Domains</label>
+                        
+                        <input type="radio" name="view-mode" id="view-time" value="time">
+                        <label for="view-time">Time Domain</label>
+
+                        <input type="radio" name="view-mode" id="view-freq" value="freq">
+                        <label for="view-freq">Frequency</label>
+
+                        <input type="radio" name="view-mode" id="view-phasor" value="phasor">
+                        <label for="view-phasor">Phasor Diagram</label>
+
+                        <input type="radio" name="view-mode" id="view-power" value="power">
+                        <label for="view-power">Power Analysis</label>
+                    </div>
+                </div>
+
+                <!-- LIVE TELEMETRY STATS SECTION -->
+                <div class="telemetry-box">
+                    <h3>Live System Analytics</h3>
+                    <div class="stat-row">
+                        <span class="stat-lbl">Carrier Power ($P_c$)</span>
+                        <span class="stat-val" id="stat-pc">0.500 W</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-lbl">Sideband Power ($P_{sb}$)</span>
+                        <span class="stat-val" id="stat-psb">0.250 W</span>
+                    </div>
+                    <div class="stat-row border-top">
+                        <span class="stat-lbl">Total Power ($P_t$)</span>
+                        <span class="stat-val" id="stat-pt">0.750 W</span>
+                    </div>
+                    <div class="stat-row highlight">
+                        <span class="stat-lbl">Efficiency ($\eta$)</span>
+                        <span class="stat-val accent" id="stat-eff">33.3%</span>
+                    </div>
+                </div>
+
+                <button id="audio-toggle" class="audio-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    <span>Start Engine</span>
+                </button>
+            </section>
+
+            <section id="vis-cluster" class="visualizer-cluster" data-view="all">
+                <div class="viz-panel time-domain">
+                    <div class="panel-label">Time Domain Waveform</div>
+                    <div class="canvas-wrapper">
+                        <canvas id="time-canvas"></canvas>
+                    </div>
+                </div>
+                
+                <div class="viz-panel freq-domain">
+                    <div class="panel-label">Frequency Spectrum</div>
+                    <div class="canvas-wrapper">
+                        <canvas id="freq-canvas"></canvas>
+                    </div>
+                </div>
+
+                <div class="viz-panel phasor-domain">
+                    <div class="panel-label">Phasor Diagram ($f_c$ Frame)</div>
+                    <div class="canvas-wrapper">
+                        <canvas id="phasor-canvas"></canvas>
+                    </div>
+                </div>
+
+                <div class="viz-panel power-domain">
+                    <div class="panel-label">Power Analytics & Efficiency</div>
+                    <div class="canvas-wrapper">
+                        <canvas id="power-canvas"></canvas>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- PHYSICAL HARDWARE GENERATION ATLAS -->
+        <section class="hardware-lab">
+            <div class="lab-header">
+                <div class="lab-title-box">
+                    <span class="label-mini">SYSTEM REPOSITORY</span>
+                    <h2>AM Modulation Hardware & Circuitry</h2>
+                </div>
+                <div class="lab-selector">
+                    <button class="lab-btn active" onclick="switchCircuit('square')">Square-Law (Low)</button>
+                    <button class="lab-btn" onclick="switchCircuit('switching')">Switching (Low)</button>
+                    <button class="lab-btn" onclick="switchCircuit('collector')">Collector (High)</button>
+                </div>
+            </div>
+
+            <div class="lab-viewer">
+                <!-- TAB 1: Square Law -->
+                <div id="circ-square" class="circuit-slot active">
+                    <div class="circ-blueprint">
+                        <img src="assets/square.png" alt="Square Law Circuit">
+                        <div class="bp-tag">SQUARE-LAW MODULATOR</div>
+                    </div>
+                    <div class="circ-theory">
+                        <h3>Non-Linear Direct Addition</h3>
+                        <p>Utilizes non-linear operation region (square-law portion) of a diode or FET. Message $m(t)$ and Carrier $c(t)$ pass summation $v_1 = m+c$, then expand by $v_2 = a v_1 + b v_1^2$.</p>
+                        <div class="wave-desc">
+                            <strong>Input Waveform:</strong> Continuous superposition of slow baseband on fast RF.<br>
+                            <strong>Output Theorem:</strong> $s(t)$ is filtered from $2bm(t)c(t)$ term by Tank BPF.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: Switching -->
+                <div id="circ-switching" class="circuit-slot">
+                    <div class="circ-blueprint">
+                        <img src="assets/switching.png" alt="Switching Modulator">
+                        <div class="bp-tag">SWITCHING MODULATOR</div>
+                    </div>
+                    <div class="circ-theory">
+                        <h3>High-Speed Carrier Gating</h3>
+                        <p>Drives a diode bridge purely as a periodic ON/OFF switch via dominant carrier voltage magnitude. Effectively multiplies input message by square periodic wave $p(t)$.</p>
+                        <div class="wave-desc">
+                            <strong>Input Waveform:</strong> Pure analog message gated into pulses.<br>
+                            <strong>Output Theorem:</strong> Fundamental harmonic extraction via resonant BPF outputs perfect AM sinusoid.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: Collector -->
+                <div id="circ-collector" class="circuit-slot">
+                    <div class="circ-blueprint">
+                        <img src="assets/collector.png" alt="Collector Modulator">
+                        <div class="bp-tag">COLLECTOR MODULATOR</div>
+                    </div>
+                    <div class="circ-theory">
+                        <h3>High-Level (Class C) Driver</h3>
+                        <p>BJT Transistor configured in Class C. The base is driven into saturation by the carrier, while the collector DC voltage is dynamically modulated directly by the audio message via step-up transformer.</p>
+                        <div class="wave-desc">
+                            <strong>Input Waveform:</strong> Pulsed base current with shifting collector rail.<br>
+                            <strong>Output Theorem:</strong> The high-power tank flywheel converts rail-shifting pulses into maximal efficiency continuous AM wave.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DEDICATED SCIENTIFIC LEDGER & FORMULA CALCULATION SECTION -->
+        <section class="scientific-ledger">
+            <div class="ledger-header">
+                <h2>Theoretical Calculation Theorem & Output Data</h2>
+            </div>
+            <div class="ledger-grid">
+                <div class="ledger-item">
+                    <div class="ld-lbl">Peak Envelope Voltage ($V_{max}$)</div>
+                    <div class="ld-val" id="ld-vmax">2.00 V</div>
+                    <div class="ld-eqn">Equation: $A_c(1 + m)$</div>
+                </div>
+                <div class="ledger-item">
+                    <div class="ld-lbl">Minimum Envelope ($V_{min}$)</div>
+                    <div class="ld-val" id="ld-vmin">0.00 V</div>
+                    <div class="ld-eqn">Equation: $A_c(1 - m)$</div>
+                </div>
+                <div class="ledger-item highlight-box">
+                    <div class="ld-lbl">Output Radiated Power ($P_{t}$)</div>
+                    <div class="ld-val accent-c" id="ld-ptotal">0.750 W</div>
+                    <div class="ld-eqn">Equation: $P_c + P_{sb}$</div>
+                </div>
+                <div class="ledger-item highlight-box">
+                    <div class="ld-lbl">Transmission Efficiency ($\eta$)</div>
+                    <div class="ld-val accent-c" id="ld-efficiency">33.3%</div>
+                    <div class="ld-eqn">Equation: $P_{sb} / P_{total}$</div>
+                </div>
+            </div>
+        </section>
+    </div>
+    <script src="amplitude modulation.js"></script>
+</body>
+</html>
